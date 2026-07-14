@@ -2,6 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "main": ".open-next/worker.js",
   "name": "coolify-app-manager",
+  "keep_vars": true,
   "compatibility_date": "2026-07-14",
   "compatibility_flags": [
     "nodejs_compat"
