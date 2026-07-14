@@ -1,7 +1,7 @@
 "use client";
 
-import { RefreshCw as refreshCw, TerminalSquare as terminalSquare, X as x } from "lucide-react";
-import { useMemo } from "react";
+import { Check as check, Copy as copy, RefreshCw as refreshCw, TerminalSquare as terminalSquare, X as x } from "lucide-react";
+import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { StatusBadge } from "@/components/status-badge";
 import type { ApiMessage, Deployment, DeploymentLogs } from "@/lib/types";
@@ -84,6 +84,8 @@ const parseDeploymentLogs = (source: string): DeploymentLogLine[] => {
 };
 
 export function DeploymentLogDrawer({ deployment, onClose }: DeploymentLogDrawerProps) {
+  const Check = check;
+  const Copy = copy;
   const Refresh = refreshCw;
   const Terminal = terminalSquare;
   const Close = x;
@@ -100,6 +102,36 @@ export function DeploymentLogDrawer({ deployment, onClose }: DeploymentLogDrawer
     () => parseDeploymentLogs(data?.logs ?? ""),
     [data?.logs],
   );
+  const copyableLogs = useMemo<string>(
+    () => logLines.map((line) => (line.timestamp ? `${line.timestamp} ${line.message}` : line.message)).join("\n"),
+    [logLines],
+  );
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
+
+  const copyLogs = async () => {
+    if (!copyableLogs) return;
+
+    try {
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(copyableLogs);
+      } else {
+        const fallback = document.createElement("textarea");
+        fallback.value = copyableLogs;
+        fallback.style.position = "fixed";
+        fallback.style.opacity = "0";
+        document.body.append(fallback);
+        fallback.select();
+        const copied = document.execCommand("copy");
+        fallback.remove();
+        if (!copied) throw new Error("The browser could not copy the logs.");
+      }
+
+      setCopyState("copied");
+      window.setTimeout(() => setCopyState("idle"), 2_000);
+    } catch {
+      setCopyState("error");
+    }
+  };
 
   return (
     <div className="drawer-layer" role="presentation">
@@ -124,9 +156,15 @@ export function DeploymentLogDrawer({ deployment, onClose }: DeploymentLogDrawer
 
         <div className="log-toolbar">
           <div><Terminal size={15} /><span>Build output</span></div>
-          <button className="icon-button quiet" onClick={() => mutate()} disabled={isValidating} aria-label="Refresh deployment logs">
-            <Refresh className={isValidating ? "spin" : ""} size={15} />
-          </button>
+          <div className="log-toolbar-actions">
+            <button className="secondary-button log-copy-button" onClick={copyLogs} disabled={!copyableLogs}>
+              {copyState === "copied" ? <Check size={14} /> : <Copy size={14} />}
+              {copyState === "copied" ? "Copied" : copyState === "error" ? "Copy failed" : "Copy logs"}
+            </button>
+            <button className="icon-button quiet" onClick={() => mutate()} disabled={isValidating} aria-label="Refresh deployment logs">
+              <Refresh className={isValidating ? "spin" : ""} size={15} />
+            </button>
+          </div>
         </div>
 
         <div className="log-output" aria-live="polite">
