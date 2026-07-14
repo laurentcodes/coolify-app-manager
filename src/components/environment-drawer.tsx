@@ -10,7 +10,7 @@ import {
   Trash2 as trash2,
   X as x,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import type { ApiMessage, Application, EnvironmentVariable } from "@/lib/types";
 
@@ -82,6 +82,28 @@ const parseEnvironmentVariables = (
   });
 };
 
+const renderEnvironmentSource = (source: string) =>
+  source.split(/\r?\n/).map((line, index, lines) => {
+    const assignment = line.match(/^(\s*(?:export\s+)?)([A-Za-z_][A-Za-z0-9_]*)(\s*=\s*)(.*)$/);
+    const isComment = line.trimStart().startsWith("#");
+
+    return (
+      <span key={`${line}-${index}`}>
+        {isComment ? <span className="env-token-comment">{line}</span> : null}
+        {!isComment && assignment ? (
+          <>
+            <span className="env-token-prefix">{assignment[1]}</span>
+            <span className="env-token-key">{assignment[2]}</span>
+            <span className="env-token-separator">{assignment[3]}</span>
+            <span className="env-token-value">{assignment[4]}</span>
+          </>
+        ) : null}
+        {!isComment && !assignment ? line : null}
+        {index < lines.length - 1 ? <br /> : null}
+      </span>
+    );
+  });
+
 type EnvironmentDrawerProps = {
   application: Application;
   onClose: () => void;
@@ -109,6 +131,7 @@ export function EnvironmentDrawer({ application, onClose, onNotice }: Environmen
   const [developerText, setDeveloperText] = useState<string>("");
   const [developerError, setDeveloperError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<"save" | "redeploy" | null>(null);
+  const developerHighlightRef = useRef<HTMLPreElement>(null);
 
   const variables = useMemo<EnvironmentVariable[]>(() => {
     const existing = (data ?? []).map((variable, index) => ({
@@ -244,19 +267,30 @@ export function EnvironmentDrawer({ application, onClose, onNotice }: Environmen
               <span className="editor-tab"><Code size={13} /> .env</span>
               <span>UTF-8</span>
             </div>
-            <textarea
-              className="developer-textarea"
-              value={developerText}
-              onChange={(event) => {
-                setDeveloperText(event.target.value);
-                setDeveloperError(null);
-              }}
-              aria-label="Environment file editor"
-              wrap="soft"
-              spellCheck={false}
-              autoCapitalize="off"
-              autoCorrect="off"
-            />
+            <div className="developer-code-surface">
+              <pre className="developer-highlight" ref={developerHighlightRef} aria-hidden="true">
+                {renderEnvironmentSource(developerText)}
+              </pre>
+              <textarea
+                className="developer-textarea"
+                value={developerText}
+                onChange={(event) => {
+                  setDeveloperText(event.target.value);
+                  setDeveloperError(null);
+                }}
+                onScroll={(event) => {
+                  if (developerHighlightRef.current) {
+                    developerHighlightRef.current.scrollTop = event.currentTarget.scrollTop;
+                    developerHighlightRef.current.scrollLeft = event.currentTarget.scrollLeft;
+                  }
+                }}
+                aria-label="Environment file editor"
+                wrap="soft"
+                spellCheck={false}
+                autoCapitalize="off"
+                autoCorrect="off"
+              />
+            </div>
             {developerError ? <div className="editor-error" role="alert">{developerError}</div> : null}
           </div>
         ) : (
@@ -351,18 +385,16 @@ export function EnvironmentDrawer({ application, onClose, onNotice }: Environmen
           <div>
             <button className="text-button" onClick={onClose}>Cancel</button>
             <button
-              className={isDeveloperMode ? "secondary-button" : "primary-button"}
+              className="secondary-button"
               onClick={() => saveVariables(false)}
               disabled={isSubmitting || isLoading || Boolean(error)}
             >
               {pendingAction === "save" ? "Saving…" : "Save changes"}
             </button>
-            {isDeveloperMode ? (
-              <button className="primary-button redeploy-button" onClick={() => saveVariables(true)} disabled={isSubmitting || isLoading || Boolean(error)}>
-                {pendingAction === "redeploy" ? <span className="button-spinner" /> : <Rocket size={14} />}
-                {pendingAction === "redeploy" ? "Updating…" : "Update & redeploy"}
-              </button>
-            ) : null}
+            <button className="primary-button redeploy-button" onClick={() => saveVariables(true)} disabled={isSubmitting || isLoading || Boolean(error)}>
+              {pendingAction === "redeploy" ? <span className="button-spinner" /> : <Rocket size={14} />}
+              {pendingAction === "redeploy" ? "Updating…" : "Update & redeploy"}
+            </button>
           </div>
         </footer>
       </aside>

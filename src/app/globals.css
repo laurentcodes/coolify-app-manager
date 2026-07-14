@@ -1297,6 +1297,7 @@ time,
 }
 
 .developer-textarea {
+  position: relative;
   width: 100%;
   min-height: 260px;
   flex: 1;
@@ -1304,8 +1305,8 @@ time,
   padding: 18px 20px;
   border: 0;
   outline: 0;
-  background: #090b0e;
-  color: #cbd1db;
+  background: transparent;
+  color: transparent;
   caret-color: #9fb0f2;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 13px;
@@ -1316,8 +1317,55 @@ time,
   word-break: break-word;
 }
 
+.developer-code-surface {
+  position: relative;
+  min-height: 260px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.developer-highlight {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  overflow: hidden;
+  padding: 18px 20px;
+  color: #cbd1db;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  line-height: 1.8;
+  pointer-events: none;
+  tab-size: 2;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.developer-textarea::selection {
+  background: rgba(88, 110, 181, 0.38);
+}
+
 .developer-textarea:focus {
   box-shadow: inset 3px 0 0 #5268b4;
+}
+
+.env-token-prefix,
+.env-token-separator {
+  color: #768092;
+}
+
+.env-token-key {
+  color: #a9baff;
+  font-weight: 650;
+}
+
+.env-token-value {
+  color: #d5dbe5;
+}
+
+.env-token-comment {
+  color: #697486;
+  font-style: italic;
 }
 
 .editor-error {
