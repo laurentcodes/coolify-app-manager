@@ -683,9 +683,17 @@ time,
 }
 
 .status-degraded,
-.status-in_progress,
-.status-queued {
+.status-in_progress {
   color: var(--amber);
+}
+
+.status-queued {
+  color: #8d9bc0;
+}
+
+.status-queued .status-dot {
+  border: 1px solid currentColor;
+  background: transparent;
 }
 
 .status-failed {
@@ -800,9 +808,12 @@ time,
   background: var(--red);
 }
 
-.deployment-line-in_progress,
-.deployment-line-queued {
+.deployment-line-in_progress {
   background: var(--amber);
+}
+
+.deployment-line-queued {
+  background: #7180a8;
 }
 
 .deployment-copy > div {
@@ -1309,10 +1320,13 @@ time,
 }
 
 .developer-textarea {
-  position: relative;
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  display: block;
   width: 100%;
-  min-height: 260px;
-  flex: 1;
+  height: 100%;
+  min-height: 0;
   resize: none;
   padding: 18px 20px;
   border: 0;
